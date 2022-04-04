@@ -20,7 +20,6 @@ class WavefrontScene(Scene):
 
     def get_mesh_faces(self, mesh: Mesh) -> List[List[Tuple[float]]]:
         return mesh.faces
-
      
     def get_meshes(self):        
         return self.__scene.mesh_list        

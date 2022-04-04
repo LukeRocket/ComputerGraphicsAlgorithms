@@ -1,14 +1,16 @@
 import os
-from typing import List 
+from typing import List, Tuple, Optional 
 from dataclasses import dataclass 
 from parse_obj import Parser
 from display import Displayer
+from entities import Mesh, Scene, Face, Vertex
 
-'''def cumulative_average(mean, sample, n: int):
+def cumulative_average(mean: float, sample: float, n: int) -> float:
     n += 1
     mean += (sample - mean) / n
+    return mean
 
-@dataclass
+'''@dataclass
 class Point:
     x: float
     y: float
@@ -71,16 +73,45 @@ class Face:
 '''
 @dataclass
 class CatmullClark:   
-    def execute(self):        
-        pass
-        '''face_points: List[Point]        
-        for f in self.mesh faces:
-            faces_points.append(f.get_face_point())'''
+    """
+        For each face define face point
+    """    
+    scene: Scene
+    face_points: Optional[List[Tuple[float]]] = None
+
+    def get_face_point(self, face: Face) -> Tuple[float]:    
+        vertices = self.scene.vertices
+        mean_x: float = 0.0
+        mean_y: float = 0.0
+        mean_z: float = 0.0
+        for n, vertex_index in enumerate(face):                    
+            mean_x = cumulative_average(mean_x, vertices[vertex_index][0], n)
+            mean_y = cumulative_average(mean_y, vertices[vertex_index][1], n)
+            mean_z = cumulative_average(mean_z, vertices[vertex_index][2], n)        
+        '''print(f"mean_x {mean_x}")
+        print(f"mean_y {mean_y}")
+        print(f"mean_z {mean_z}")'''
+        return  Vertex([mean_x, mean_y, mean_z], [255.0, 0.0, 0.0])
+
+
+    def execute(self, mesh: Mesh):                
+        faces = self.scene.get_mesh_faces(mesh)
+        if self.face_points is None:
+            self.face_points = []
+            for f in faces:                        
+                self.face_points.append(
+                        self.get_face_point(f)
+                    )
         
-
-
 if __name__ == "__main__":
     PATH: str = os.path.join('.', 'resources', 'teapot.obj')
     p = Parser(PATH)
-    d = Displayer(p())    
-    d.display()   
+    scene = p()    
+
+    c = CatmullClark(scene)
+    for mesh in scene.get_meshes():
+        c.execute(mesh)    
+        
+    d = Displayer()   
+    d.display(vertices=c.face_points, scene=scene)   
+    
