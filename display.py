@@ -14,8 +14,9 @@ from entities import Scene, Vertex
 class Displayer:
 
     def display_vertices(self, vertices: List[Vertex]):
-        glBegin(GL_POINTS)
-        for v in vertices:
+        #glBegin(GL_POINTS)
+        glBegin(GL_TRIANGLES)
+        for v in vertices:            
             glColor(*v.color)
             glVertex3f(*v.coords)
         glEnd()
@@ -25,9 +26,9 @@ class Displayer:
             glBegin(GL_TRIANGLES)
             faces = scene.get_mesh_faces(mesh)            
             for face in faces:
-                for vertex_index in face:
-                    glColor(*scene.get_vertex_from_index(vertex_index)[3:])
-                    glVertex3f(*scene.get_vertex_from_index(vertex_index)[:3])
+                for vertex_index in face.vertices_index:
+                    glColor(*scene.get_vertex_from_index(vertex_index).color)
+                    glVertex3f(*scene.get_vertex_from_index(vertex_index).coords)
         glEnd()
         
     def exit(self):
@@ -51,6 +52,14 @@ class Displayer:
         if event.y < 0:
             glTranslatef(0,0,-1)        
 
+    def view_rotation(self, event, rot_x: float, rot_y: float):
+        mouse_buttons = pygame.mouse.get_pressed()
+        button_down = mouse_buttons[0] == 1
+        if button_down:
+            rot_x += event.rel[1]
+            rot_y += event.rel[0]
+        glRotatef(rot_x, 1, 0, 0)    
+        glRotatef(rot_y, 0, 1, 0)  
 
     def display(self, scene: Optional[Scene] = None, vertices: Optional[List[Vertex]] = None):
         window_w: float = 1280
@@ -61,6 +70,7 @@ class Displayer:
         gluPerspective(45, (window_w / window_h), 1, 500.0)
         z_offset: float = 1.0
         glTranslatef(0.0, 0.0, -z_offset) 
+        rot_x, rot_y = 0, 0
         while True:
             # get pygame events 
             for event in pygame.event.get():                                                 
@@ -71,11 +81,14 @@ class Displayer:
                     self.translate_scene(event=event)
                 if event.type == pygame.MOUSEWHEEL:
                     self.zoom(event=event)
+                elif event.type == pygame.MOUSEMOTION:
+                    self.view_rotation(event=event, rot_x=rot_x, rot_y=rot_y)
 
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)  
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
 
             glPushMatrix()
+   
             if scene is not None:
                 self.display_scene(scene=scene)                
             if vertices is not None:
