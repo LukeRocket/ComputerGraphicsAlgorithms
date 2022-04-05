@@ -12,7 +12,10 @@ class Parser:
         scene =  pywavefront.Wavefront(self.path, collect_faces=True)
         vertices = []
         for vertex in scene.vertices:
-            vertices.append(Vertex(coords = vertex[:3], color=vertex[3:]))
+            if len(vertex) == 6:
+                vertices.append(Vertex(coords = vertex[:3], color=vertex[3:]))
+            elif len(vertex) == 3:
+                vertices.append(Vertex(coords = vertex[:3], color=[255, 255, 255]))
         return WavefrontScene(scene, vertices)
         
 

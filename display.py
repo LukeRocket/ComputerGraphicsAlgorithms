@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import Optional, List
+from enum import Enum
 
 import pygame
 from pygame.locals import *
@@ -13,18 +14,17 @@ from entities import Scene, Vertex
 @dataclass
 class Displayer:
 
-    def display_vertices(self, vertices: List[Vertex]):
-        #glBegin(GL_POINTS)
-        glBegin(GL_TRIANGLES)
+    def display_vertices(self, vertices: List[Vertex], mode: Enum = GL_POINTS):
+        glBegin(mode)
         for v in vertices:            
             glColor(*v.color)
             glVertex3f(*v.coords)
         glEnd()
 
-    def display_scene(self, scene: Scene):
+    def display_scene(self, scene: Scene, mode: Enum = GL_POINTS):
         for mesh in scene.get_meshes():
-            glBegin(GL_TRIANGLES)
-            faces = scene.get_mesh_faces(mesh)            
+            glBegin(mode)
+            faces = scene.get_mesh_faces(mesh)                                    
             for face in faces:
                 for vertex_index in face.vertices_index:
                     glColor(*scene.get_vertex_from_index(vertex_index).color)
@@ -90,9 +90,9 @@ class Displayer:
             glPushMatrix()
    
             if scene is not None:
-                self.display_scene(scene=scene)                
+                self.display_scene(scene=scene, mode=GL_TRIANGLES)                
             if vertices is not None:
-                self.display_vertices(vertices=vertices)                                     
+                self.display_vertices(vertices=vertices, mode=GL_TRIANGLES)                                     
             glPopMatrix()
 
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
