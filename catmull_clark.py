@@ -2,10 +2,13 @@ import os
 import copy
 from typing import List, Tuple, Optional 
 from dataclasses import dataclass 
+from collections import Counter
+
 from parse_obj import Parser
 from display import Displayer
 from entities import Mesh, Scene, Face, Vertex
 from utils import cumulative_average
+
 
 @dataclass
 class CatmullClark:   
@@ -25,20 +28,21 @@ class CatmullClark:
         mean_y = 0.0
         mean_z = 0.0
         coutNears = 0
-        for index in [p1_index, p2_index]:
-            for f_point in near_points[index][0]:
-                coutNears += 1
-                mean_x = cumulative_average(mean_x, f_point.coords[0], coutNears)
-                mean_y = cumulative_average(mean_y, f_point.coords[1], coutNears)
-                mean_z = cumulative_average(mean_z, f_point.coords[2], coutNears)
+
+                        
+        face_pts = [k for k,v in Counter(near_points[p1_index][0] + near_points[p2_index][0]).items() if v>1]
+        
+        for f_point in face_pts:
+            coutNears += 1
+            mean_x = cumulative_average(mean_x, f_point.coords[0], coutNears)
+            mean_y = cumulative_average(mean_y, f_point.coords[1], coutNears)
+            mean_z = cumulative_average(mean_z, f_point.coords[2], coutNears)
 
         return Vertex(coords=[(x+mean_x)/2,(y+mean_y)/2,(z+mean_z)/2], color=[255, 0, 0])
 
     def get_new_vertex_point(self, near_points: List[List[List[Vertex]]]):
         new_locations = []
-        for v in range(len(self.scene.vertices)):                  
-            # mean face point
-            coutNears = 0
+        for v in range(len(self.scene.vertices)):                              
             # face point
             mean_x_fp = 0.0
             mean_y_fp = 0.0
@@ -47,6 +51,8 @@ class CatmullClark:
             mean_x_em = 0.0
             mean_y_em = 0.0
             mean_z_em = 0.0
+            # mean face point
+            coutNears = 0
             for f_point in near_points[v][0]:
                 coutNears += 1
                 mean_x_fp = cumulative_average(mean_x_fp, f_point.coords[0], coutNears)
@@ -74,14 +80,7 @@ class CatmullClark:
         return new_locations
 
 
-    def execute(self, mesh: Mesh):                
-        
-        faces = self.scene.get_mesh_faces(mesh)
-        # set face points        
-        for f in faces:
-            f.set_face_point(vertices=self.scene.vertices) 
-
-        # get edge points        
+    def get_construction_point_list(self, faces: List[Face]) -> List[List[Vertex]]:
         near_face_pts_per_vertex = []
         for v in range(len(self.scene.vertices)):                        
             neighbor_vertex_pts = []
@@ -95,44 +94,56 @@ class CatmullClark:
 
                     neighbor_vertex_pts.append(f.get_face_point())     
 
-            near_face_pts_per_vertex.append([neighbor_vertex_pts, edge_other_extreme])       
+            near_face_pts_per_vertex.append([neighbor_vertex_pts, edge_other_extreme])   
+        return near_face_pts_per_vertex
+
+    def execute(self, mesh: Mesh):                
+   
+        faces = self.scene.get_mesh_faces(mesh)
+        # set face points        
+        for f in faces:
+            f.set_face_point(vertices=self.scene.vertices) 
+
+        # get construction points        
+        near_face_pts_per_vertex = self.get_construction_point_list(faces=faces)
         
         face_points = [f.get_face_point() for f in faces]        
 
         final_list = []
-
         # get new vertex point
         new_verteces_locations = self.get_new_vertex_point(near_face_pts_per_vertex)
 
-        edge_points = []
         for f in faces:
             # get edge points
             edge_0 = self.get_edge_point(f.vertices_index[0], f.vertices_index[1], near_face_pts_per_vertex)
             edge_1 = self.get_edge_point(f.vertices_index[1], f.vertices_index[2], near_face_pts_per_vertex)
             edge_2 = self.get_edge_point(f.vertices_index[2], f.vertices_index[0], near_face_pts_per_vertex)        
 
-            final_list.append(f.get_face_point())   
-            final_list.append(new_verteces_locations[f.vertices_index[0]])
-            final_list.append(edge_0)
-            
+            # get face point
+            face_pt = f.get_face_point()
 
-            final_list.append(f.get_face_point())   
+            #collect edges
+            final_list.append(face_pt)   
+            final_list.append(new_verteces_locations[f.vertices_index[0]])
+            final_list.append(edge_0)            
+
+            final_list.append(face_pt)   
             final_list.append(new_verteces_locations[f.vertices_index[1]])
             final_list.append(edge_0)
 
-            final_list.append(f.get_face_point())   
+            final_list.append(face_pt)   
             final_list.append(new_verteces_locations[f.vertices_index[2]])
             final_list.append(edge_2)
 
-            final_list.append(f.get_face_point())   
+            final_list.append(face_pt)   
             final_list.append(new_verteces_locations[f.vertices_index[0]])
             final_list.append(edge_2)
             
-            final_list.append(f.get_face_point())   
+            final_list.append(face_pt)   
             final_list.append(new_verteces_locations[f.vertices_index[2]])
             final_list.append(edge_1)
 
-            final_list.append(f.get_face_point())   
+            final_list.append(face_pt)   
             final_list.append(new_verteces_locations[f.vertices_index[1]])
             final_list.append(edge_1)
                                 
@@ -141,9 +152,9 @@ class CatmullClark:
 
 if __name__ == "__main__":
     #PATH: str = os.path.join('.', 'resources', 'teapot.obj')
-    #PATH: str = os.path.join('.', 'resources', 'cube.obj')
+    PATH: str = os.path.join('.', 'resources', 'cube.obj')
     #PATH: str = os.path.join('.', 'resources', 'monsterfrog.obj')
-    PATH: str = os.path.join('.', 'resources', 'test.obj')
+    #PATH: str = os.path.join('.', 'resources', 'test.obj')
 
     p = Parser(PATH)
     scene = p()    

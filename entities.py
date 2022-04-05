@@ -9,12 +9,17 @@ from utils import cumulative_average
 class Vertex:
     coords: List[float]
     color: Optional[List[float]] = None
+    id: int = 9999
+
+    def __hash__(self):
+        return hash(str(self.id))
 
 
 @dataclass
 class Face:
     vertices_index: List[int]    
     __face_point: Optional[Vertex] = None
+    id: int = 9999
     
     def set_face_point(self, vertices: List[Vertex]) -> Vertex:            
         if self.__face_point is None:
@@ -22,17 +27,16 @@ class Face:
             mean_y: float = 0.0
             mean_z: float = 0.0
             for n, v in enumerate(self.vertices_index):                    
-                mean_x = cumulative_average(mean_x, vertices[v].coords[0], n)
-                mean_y = cumulative_average(mean_y, vertices[v].coords[1], n)
-                mean_z = cumulative_average(mean_z, vertices[v].coords[2], n)        
-            self.__face_point = Vertex([mean_x, mean_y, mean_z],  [255, 0, 0])
+                mean_x = cumulative_average(mean_x, vertices[v].coords[0], n+1)
+                mean_y = cumulative_average(mean_y, vertices[v].coords[1], n+1)
+                mean_z = cumulative_average(mean_z, vertices[v].coords[2], n+1)        
+            self.__face_point = Vertex([mean_x, mean_y, mean_z],  [255, 0, 0], id=self.id)
 
     def get_face_point(self) -> Vertex:
         if self.__face_point is None:
             raise Exception ("Set Face point")
         return self.__face_point
         
-
 
 @dataclass
 class Mesh:

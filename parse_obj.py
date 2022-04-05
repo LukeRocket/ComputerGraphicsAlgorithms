@@ -28,8 +28,8 @@ class WavefrontScene(Scene):
     def get_mesh_faces(self, mesh: Mesh) -> List[List[Tuple[float]]]:
         if self.faces is None:
             self.faces: List[Face] = []
-            for f in mesh.faces:
-                self.faces.append(Face(vertices_index=f)) 
+            for id, f in enumerate(mesh.faces):
+                self.faces.append(Face(vertices_index=f, id = id)) 
         return self.faces
     
     def get_meshes(self):        
