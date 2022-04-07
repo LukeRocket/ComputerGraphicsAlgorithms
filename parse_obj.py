@@ -40,14 +40,14 @@ class WavefrontScene(Scene):
         return self.vertices[index]
 
 
-def to_obj(file_path: str, vertices: List[Vertex]) -> None:
+def to_obj(file_path: str, vertices: List[Vertex], faces: List[Face]) -> None:
     with open(file_path, 'w') as f:
-        face = []        
+  
         for i, v in enumerate(vertices):
             c = v.coords
             f.write(f"v {c[0]} {c[1]} {c[2]}\n")
-            face.append(i+1)
-            if len(face) == 4:
-                f.write(f"f {face[0]} {face[1]} {face[2]} {face[3]}\n")
-                face = []    
-            
+        for face in faces:
+            f.write("f")
+            for index in face.vertices_index:
+                f.write(f" {index}")
+            f.write("\n")            
