@@ -1,3 +1,4 @@
+from numpy import reshape, arange
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
 from typing import List, Tuple, Optional      
@@ -43,6 +44,7 @@ class Mesh:
     faces_list: List[Face]
 
 
+@dataclass
 class Scene(ABC):
     vertices: List[Vertex]
 

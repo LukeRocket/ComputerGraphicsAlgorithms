@@ -61,7 +61,7 @@ class Displayer:
         glRotatef(rot_x, 1, 0, 0)    
         glRotatef(rot_y, 0, 1, 0)  
 
-    def display(self, scene: Optional[Scene] = None, vertices: Optional[List[Vertex]] = None):
+    def display(self, scene: Optional[Scene] = None, vertices: Optional[List[Vertex]] = None, wireframe:bool = True):
         window_w: float = 1280
         window_h: float = 720
 
@@ -85,14 +85,16 @@ class Displayer:
                     self.view_rotation(event=event, rot_x=rot_x, rot_y=rot_y)
 
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)  
-            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
+            if wireframe:
+                glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
 
             glPushMatrix()
    
             if scene is not None:
                 self.display_scene(scene=scene, mode=GL_TRIANGLES)                
             if vertices is not None:
-                self.display_vertices(vertices=vertices, mode=GL_TRIANGLES)                                     
+                #self.display_vertices(vertices=vertices, mode=GL_TRIANGLES)                                     
+                self.display_vertices(vertices=vertices, mode=GL_QUADS)                                     
             glPopMatrix()
 
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)

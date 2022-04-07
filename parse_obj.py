@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import List, Tuple, Optional
 from entities import Scene, Mesh, Face, Vertex
 
+
 @dataclass
 class Parser:
     path: str     
@@ -12,16 +13,16 @@ class Parser:
         scene =  pywavefront.Wavefront(self.path, collect_faces=True)
         vertices = []
         for vertex in scene.vertices:
-            if len(vertex) == 6:
-                vertices.append(Vertex(coords = vertex[:3], color=vertex[3:]))
-            elif len(vertex) == 3:
-                vertices.append(Vertex(coords = vertex[:3], color=[255, 255, 255]))
-        return WavefrontScene(scene, vertices)
+            if len(vertex) > 4:
+                vertices.append(Vertex(coords = vertex[:-3], color=vertex[-3:]))
+            elif len(vertex) <= 3:
+                vertices.append(Vertex(coords = vertex, color=[255, 255, 255]))
+        return WavefrontScene(scene=scene, vertices=vertices)
         
 
 @dataclass
 class WavefrontScene(Scene):
-    __scene:  pywavefront.wavefront.Wavefront    
+    scene:  pywavefront.wavefront.Wavefront    
     vertices: List[Vertex]
     faces: Optional[List[Face]] = None
 
@@ -32,21 +33,21 @@ class WavefrontScene(Scene):
                 self.faces.append(Face(vertices_index=f, id = id)) 
         return self.faces
     
-    def get_meshes(self):        
-        return self.__scene.mesh_list        
+    def get_meshes(self):      
+        return self.scene.mesh_list        
 
     def get_vertex_from_index(self, index: int) -> Vertex:         
         return self.vertices[index]
 
 
-
 def to_obj(file_path: str, vertices: List[Vertex]) -> None:
     with open(file_path, 'w') as f:
-        face = []
+        face = []        
         for i, v in enumerate(vertices):
             c = v.coords
             f.write(f"v {c[0]} {c[1]} {c[2]}\n")
             face.append(i+1)
-            if len(face) == 3:
-                f.write(f"f {face[0]} {face[1]} {face[2]}\n")
+            if len(face) == 4:
+                f.write(f"f {face[0]} {face[1]} {face[2]} {face[3]}\n")
                 face = []    
+            
