@@ -4,7 +4,7 @@ from typing import List, Tuple, Optional
 from dataclasses import dataclass 
 from collections import Counter
 
-from parse_obj import Parser
+from parse_obj import Parser, to_obj
 from display import Displayer
 from entities import Mesh, Scene, Face, Vertex
 from utils import cumulative_average
@@ -150,11 +150,13 @@ class CatmullClark:
         return final_list
 
 
+
 if __name__ == "__main__":
     #PATH: str = os.path.join('.', 'resources', 'teapot.obj')
     PATH: str = os.path.join('.', 'resources', 'cube.obj')
     #PATH: str = os.path.join('.', 'resources', 'monsterfrog.obj')
     #PATH: str = os.path.join('.', 'resources', 'test.obj')
+    OUTPATH: str = os.path.join('.', 'resources', 'test_obj_writer.obj')
 
     p = Parser(PATH)
     scene = p()    
@@ -163,6 +165,7 @@ if __name__ == "__main__":
         vertices = c.execute(mesh)    
     
     d = Displayer()       
-
-    d.display(vertices=vertices, scene=scene)       
-        
+    # save as obj 
+    to_obj(OUTPATH, vertices=vertices)  
+    d.display(vertices=vertices, scene=scene, wireframe=False)       
+    

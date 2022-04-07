@@ -37,3 +37,16 @@ class WavefrontScene(Scene):
 
     def get_vertex_from_index(self, index: int) -> Vertex:         
         return self.vertices[index]
+
+
+
+def to_obj(file_path: str, vertices: List[Vertex]) -> None:
+    with open(file_path, 'w') as f:
+        face = []
+        for i, v in enumerate(vertices):
+            c = v.coords
+            f.write(f"v {c[0]} {c[1]} {c[2]}\n")
+            face.append(i+1)
+            if len(face) == 3:
+                f.write(f"f {face[0]} {face[1]} {face[2]}\n")
+                face = []    
