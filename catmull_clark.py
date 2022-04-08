@@ -1,7 +1,7 @@
 import os
 import copy
 from numpy import reshape, arange
-from typing import List, Tuple, Optional 
+from typing import List, Tuple, Dict, Optional 
 from dataclasses import dataclass 
 from collections import Counter
 
@@ -29,7 +29,6 @@ class CatmullClark:
         mean_y = 0.0
         mean_z = 0.0
         coutNears = 0
-
                         
         face_pts = [k for k,v in Counter(near_points[p1_index][0] + near_points[p2_index][0]).items() if v>1]
         
@@ -37,8 +36,7 @@ class CatmullClark:
             coutNears += 1
             mean_x = cumulative_average(mean_x, f_point.coords[0], coutNears)
             mean_y = cumulative_average(mean_y, f_point.coords[1], coutNears)
-            mean_z = cumulative_average(mean_z, f_point.coords[2], coutNears)
-
+            mean_z = cumulative_average(mean_z, f_point.coords[2], coutNears)        
         return Vertex(coords=[(x+mean_x)/2,(y+mean_y)/2,(z+mean_z)/2], color=[255, 0, 0])
 
     def get_new_vertex_point(self, near_points: List[List[List[Vertex]]]):
@@ -62,6 +60,7 @@ class CatmullClark:
 
             # old coords
             c = self.scene.vertices[v].coords
+            
             coutNears = 0
             for f_point in near_points[v][1]:
                 coutNears += 1
@@ -70,7 +69,6 @@ class CatmullClark:
                 mean_z_em = cumulative_average(mean_z_em, (f_point.coords[2] + c[2]) / 2, coutNears)
                     
             n = len(near_points[v][0])
-            
             new_locations.append(Vertex(
                 coords=[
                     (mean_x_fp + 2*mean_x_em + (n - 3)*c[0]) / n,
@@ -78,6 +76,7 @@ class CatmullClark:
                     (mean_z_fp + 2*mean_z_em + (n - 3)*c[2]) / n
                 ], color=[255, 0, 0]
             ))
+
         return new_locations
 
 
@@ -96,95 +95,99 @@ class CatmullClark:
 
                     neighbor_vertex_pts.append(f.get_face_point())     
 
-
             near_face_pts_per_vertex.append([neighbor_vertex_pts, edge_other_extreme])   
         return near_face_pts_per_vertex
-
-    def collect_vertices(self, face_vertices: List[int], 
-                            face_pt: Vertex,
-                            new_verteces_locations: List[Vertex],
-                            near_points: List[List[List[Vertex]]]):
-        face_v_list = []
-
-        # get edges
-        edges = []                        
-        n_vertices = len(face_vertices)
-        for i in range(n_vertices):
-            edges.append(self.get_edge_point(
-                    face_vertices[i],
-                    face_vertices[i+1 - n_vertices*((i+1)//n_vertices)],
-                    near_points
-                ))
-            
-        for i in range(n_vertices):
-            face_v_list.append(face_pt)
-            face_v_list.append(edges[i])
-            face_v_list.append(new_verteces_locations[face_vertices[i]])
-            face_v_list.append(edges[i-1])
-
-        return face_v_list
-
 
     def execute(self, mesh: Mesh):                
    
         faces = self.scene.get_mesh_faces(mesh)
         # set face points        
         for f in faces:
-            f.set_face_point(vertices=self.scene.vertices) 
+            f.set_face_point(vertices=self.scene.vertices)                     
 
         # get construction points        
-        near_face_pts_per_vertex = self.get_construction_point_list(faces=faces)
+        near_face_pts_per_vertex = self.get_construction_point_list(faces=faces)                     
 
-
-        face_points = [f.get_face_point() for f in faces]        
-
-        final_list = []
         # get new vertex point
         new_verteces_locations = self.get_new_vertex_point(near_face_pts_per_vertex)
+
         vertices_coords: List[Vertex] = []
         faces_v_indices: List[Face] = []
+
+        visited_vertices_mapping: Dict[int, int] = {}
+        visited_edges_mapping: Dict[Tuple[int], int] = {}
+
         for f_id, f in enumerate(faces):
-            edges = []                        
+            edges = []   
+            moved_vertices = []                     
             n_vertices = len(f.vertices_index)
+
+            n_vertices_inserted: int = 1
+
+            temp_v_dict: Dict[str, List[int]] = {
+                                                'face_pt': [len(vertices_coords)],
+                                                'edges': [],
+                                                'new_v': []
+                                            }
+
             for i in range(n_vertices):
-                edges.append(self.get_edge_point(
-                        f.vertices_index[i],
-                        f.vertices_index[i+1 - n_vertices*((i+1)//n_vertices)],
-                        near_face_pts_per_vertex
-                    ))
+                edge_indices: Tuple[int] = tuple(sorted(
+                                            [f.vertices_index[i],
+                                             f.vertices_index[i+1 - n_vertices*((i+1)//n_vertices)]]
+                                        ))
 
-            vertices_coords.append(f.get_face_point())                                   # +1
-            vertices_coords += edges                                                     # +nvertices
-            vertices_coords += [new_verteces_locations[k] for k in f.vertices_index]    # +nvertices
+                if edge_indices not in list(visited_edges_mapping.keys()):
+                    new_edge_index = len(vertices_coords)+n_vertices_inserted
+                    temp_v_dict['edges'].append(new_edge_index)
+                    visited_edges_mapping[edge_indices] = new_edge_index
+                    n_vertices_inserted += 1                    
+                    
+                    edges.append(self.get_edge_point(
+                            edge_indices[0],
+                            edge_indices[1],
+                            near_face_pts_per_vertex
+                        ))
+                else:
+                    temp_v_dict['edges'].append(visited_edges_mapping[edge_indices])
+            
+            for i in range(n_vertices):
+                vertex_index = f.vertices_index[i]
+                if vertex_index not in list(visited_vertices_mapping.keys()):
+                    new_vertex_index = len(vertices_coords)+n_vertices_inserted                    
+                    temp_v_dict['new_v'].append(new_vertex_index)
+                    visited_vertices_mapping[vertex_index] = new_vertex_index
+                    n_vertices_inserted += 1   
 
-            n = len(vertices_coords)
+                    moved_vertices.append(new_verteces_locations[vertex_index])
+                else:
+                    temp_v_dict['new_v'].append(visited_vertices_mapping[vertex_index])
+       
+            vertices_coords.append(f.get_face_point())                                   
+            vertices_coords += edges                                                     
+            vertices_coords += moved_vertices                                                                   
 
-            temp_v_dict = {'face_pt': n-1-2*n_vertices,
-                           'edges': list(range(n-2*n_vertices, n-n_vertices)),
-                           'new_v': list(range(n-n_vertices, n))}
-                                  
             for i in range(n_vertices):                
                 face_indices = []
-                face_indices.append(temp_v_dict['face_pt'])
+                face_indices.append(temp_v_dict['face_pt'][0])
                 face_indices.append(temp_v_dict['edges'][i])
                 face_indices.append(temp_v_dict['new_v'][i])
                 face_indices.append(temp_v_dict['edges'][i-1])                 
                 faces_v_indices.append(Face(vertices_index=face_indices, id=i+f_id))
 
-            #final_list += self.collect_vertices(f.vertices_index, f.get_face_point(), new_verteces_locations, near_face_pts_per_vertex)          
         return vertices_coords, faces_v_indices
 
 
-    def update_scene(self, vertices: List[Vertex], faces: List[Face]):        
-        self.scene.faces = faces
-        self.scene.vertices = vertices        
+def update_scene(scene, vertices: List[Vertex], faces: List[Face]):        
+    scene.faces = faces
+    scene.vertices = vertices        
 
-    def map_faces_vertices(self, vertices, faces):
-        vertices_mapping = []
-        for f in faces:
-            for index in f.vertices_index:
-                vertices_mapping.append(vertices[index])
-        return vertices_mapping
+
+def map_faces_vertices(vertices: List[Vertex], faces: List[Face]):
+    vertices_mapping = []
+    for f in faces:
+        for index in f.vertices_index:
+            vertices_mapping.append(vertices[index])
+    return vertices_mapping
 
 if __name__ == "__main__":
     #PATH: str = os.path.join('.', 'resources', 'teapot.obj')
@@ -195,6 +198,8 @@ if __name__ == "__main__":
     
     p = Parser(PATH)
     scene = p()    
+    first_scene = copy.copy(scene)
+
     c = CatmullClark(scene)
     d = Displayer()       
     vertices_mapping = None
@@ -202,11 +207,10 @@ if __name__ == "__main__":
         for mesh in scene.get_meshes():
             vertices, faces = c.execute(mesh)    
 
-        vertices_mapping = c.map_faces_vertices(vertices, faces)
-        print(vertices_mapping)
+        vertices_mapping = map_faces_vertices(vertices=vertices, faces=faces)
         # save as obj 
         to_obj(OUTPATH, vertices=vertices, faces=faces)  
         PATH = OUTPATH
-        c.update_scene(vertices=vertices, faces=faces)   
-    d.display(vertices=vertices_mapping, scene=scene, wireframe=True)       
+        update_scene(scene=scene, vertices=vertices, faces=faces)   
+    d.display(vertices=vertices_mapping, scene=first_scene, wireframe=False)       
         
