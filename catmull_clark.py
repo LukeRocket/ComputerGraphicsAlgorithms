@@ -181,7 +181,6 @@ def update_scene(scene, vertices: List[Vertex], faces: List[Face]):
     scene.faces = faces
     scene.vertices = vertices        
 
-
 def map_faces_vertices(vertices: List[Vertex], faces: List[Face]):
     vertices_mapping = []
     for f in faces:
@@ -191,8 +190,8 @@ def map_faces_vertices(vertices: List[Vertex], faces: List[Face]):
 
 if __name__ == "__main__":
     #PATH: str = os.path.join('.', 'resources', 'teapot.obj')
-    PATH: str = os.path.join('.', 'resources', 'cube.obj')
-    #PATH: str = os.path.join('.', 'resources', 'monsterfrog.obj')
+    #PATH: str = os.path.join('.', 'resources', 'cube.obj')
+    PATH: str = os.path.join('.', 'resources', 'monsterfrog.obj')
     #PATH: str = os.path.join('.', 'resources', 'test.obj')
     OUTPATH: str = os.path.join('.', 'resources', 'test_obj_writer.obj')
     
@@ -203,7 +202,7 @@ if __name__ == "__main__":
     c = CatmullClark(scene)
     d = Displayer()       
     vertices_mapping = None
-    for i in range(2):             
+    for i in range(3):             
         for mesh in scene.get_meshes():
             vertices, faces = c.execute(mesh)    
 
@@ -212,5 +211,5 @@ if __name__ == "__main__":
         to_obj(OUTPATH, vertices=vertices, faces=faces)  
         PATH = OUTPATH
         update_scene(scene=scene, vertices=vertices, faces=faces)   
-    d.display(vertices=vertices_mapping, scene=first_scene, wireframe=False)       
+    d.display(vertices=vertices_mapping, scene=first_scene, wireframe=True)       
         
