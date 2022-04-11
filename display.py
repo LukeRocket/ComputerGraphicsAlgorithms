@@ -24,7 +24,7 @@ class Displayer:
     def display_scene(self, scene: Scene, mode: Enum = GL_POINTS):
         for mesh in scene.get_meshes():
             glBegin(mode)
-            faces = scene.get_mesh_faces(mesh)                                    
+            faces = mesh.get_faces()                                    
             for face in faces:
                 for vertex_index in face.vertices_index:
                     glColor(*scene.get_vertex_from_index(vertex_index).color)

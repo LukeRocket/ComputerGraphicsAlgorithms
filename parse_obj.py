@@ -11,34 +11,36 @@ class Parser:
 
     def __call__(self) -> Scene:        
         scene =  pywavefront.Wavefront(self.path, collect_faces=True)
-        vertices = []
-        for vertex in scene.vertices:
+        return WavefrontScene(wf_scene=scene)
+        
+
+class WavefrontScene(Scene):
+    def __init__(self, 
+                 wf_scene:pywavefront.wavefront.Wavefront):  
+        self.wf_scene = wf_scene                       
+        meshes: List[Mesh] = self.__extract_meshes()
+        vertices: List[Vertex] = self.__extract_vertices()
+        
+        super(WavefrontScene, self).__init__(meshes=meshes, vertices=vertices)
+                               
+    def __extract_meshes(self) -> List[Mesh]:
+        meshes: List[Mesh] = []
+        for mesh in self.wf_scene.mesh_list:            
+            faces: List[Face] = []
+            for id, f in enumerate(mesh.faces):
+                faces.append(Face(vertices_index=f, id=id))
+            meshes.append(Mesh(faces = faces))
+        return meshes
+        
+    def __extract_vertices(self) -> List[Mesh]:
+        vertices: List[Vertex] = []
+        for vertex in self.wf_scene.vertices:
             if len(vertex) > 4:
                 vertices.append(Vertex(coords = vertex[:-3], color=vertex[-3:]))
             elif len(vertex) <= 3:
                 vertices.append(Vertex(coords = vertex, color=[255, 255, 255]))
-        return WavefrontScene(scene=scene, vertices=vertices)
-        
-
-@dataclass
-class WavefrontScene(Scene):
-    scene:  pywavefront.wavefront.Wavefront    
-    vertices: List[Vertex]
-    faces: Optional[List[Face]] = None
-
-    def get_mesh_faces(self, mesh: Mesh) -> List[List[Tuple[float]]]:
-        if self.faces is None:
-            self.faces: List[Face] = []
-            for id, f in enumerate(mesh.faces):
-                self.faces.append(Face(vertices_index=f, id = id)) 
-        return self.faces
-    
-    def get_meshes(self):      
-        return self.scene.mesh_list        
-
-    def get_vertex_from_index(self, index: int) -> Vertex:         
-        return self.vertices[index]
-
+        return vertices 
+       
 
 def to_obj(file_path: str, vertices: List[Vertex], faces: List[Face]) -> None:
     with open(file_path, 'w') as f:

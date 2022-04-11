@@ -1,4 +1,3 @@
-from numpy import reshape, arange
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
 from typing import List, Tuple, Optional      
@@ -36,26 +35,55 @@ class Face:
     def get_face_point(self) -> Vertex:
         if self.__face_point is None:
             raise Exception ("Set Face point")
-        return self.__face_point
+        return self.__face_point    
         
 
 @dataclass
 class Mesh:
-    faces_list: List[Face]
+    faces: List[Face]    
 
-
-@dataclass
-class Scene(ABC):
-    vertices: List[Vertex]
-
-    @abstractmethod
-    def get_vertex_from_index(self, index: int):
-        pass
+    def get_faces(self) -> List[Face]:
+        return self.faces
     
-    @abstractmethod
-    def get_mesh_faces(self, mesh: Mesh) -> List[List[Tuple[float]]]:
-        pass
+    def update_mesh(self,
+                    vertices: List[Vertex],
+                    faces: List[Face]) -> None:        
+        self.faces = faces
+        self.vertices = vertices        
+
+
+class Scene:
+    def __init__(self, meshes: List[Mesh], vertices: List[Vertex]):
+        self.__meshes: List[Mesh] = meshes
+        self.__vertices: List[Vertex] = vertices
+
+    def update_scene(self, meshes: List[Mesh], vertices: List[Vertex]) -> None:        
+        self.__meshes = meshes
+        self.__vertices = vertices
+
+    def get_mesh_by_index(self, index: int) -> Mesh:
+        assert index <= len(self.__meshes)-1, 'Index outside scene meshes list'
+        return self.__meshes[index]
     
-    @abstractmethod     
-    def get_meshes(self):
-        pass
+    def get_meshes(self) -> List[Mesh]:
+        return self.__meshes
+
+    def get_vertex_from_index(self, index: int) -> Vertex:
+        return self.__vertices[index]
+
+    def get_vertices(self) -> List[Vertex]:
+        return self.__vertices
+
+    def get_faces_vertices_map(self, mesh_index: Optional[int]= None) -> List[Vertex]:
+        vertices_mapping = []        
+        if mesh_index is not None:
+            meshes = [self.get_mesh_by_index(mesh_index)]
+        else:
+            meshes = self.get_meshes()
+
+        for mesh in meshes:
+            faces = mesh.get_faces()
+            for f in faces:
+                for index in f.vertices_index:
+                    vertices_mapping.append(self.__vertices[index])
+        return vertices_mapping
