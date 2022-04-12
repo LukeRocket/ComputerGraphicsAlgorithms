@@ -13,6 +13,9 @@ from entities import Scene, Vertex
 
 @dataclass
 class Displayer:
+    #vertices_display_mode: Enum = GL_POINTS
+    vertices_display_mode: Enum = GL_LINES
+    scene_display_mode: Enum = GL_TRIANGLES
 
     def display_vertices(self, vertices: List[Vertex], mode: Enum = GL_POINTS):
         glBegin(mode)
@@ -61,7 +64,9 @@ class Displayer:
         glRotatef(rot_x, 1, 0, 0)    
         glRotatef(rot_y, 0, 1, 0)  
 
-    def display(self, scene: Optional[Scene] = None, vertices: Optional[List[Vertex]] = None, wireframe:bool = True):
+    def display(self, scene: Optional[Scene] = None, 
+                vertices: Optional[List[Vertex]] = None,
+                wireframe:bool = True):
         window_w: float = 1280
         window_h: float = 720
 
@@ -91,10 +96,9 @@ class Displayer:
             glPushMatrix()
    
             if scene is not None:
-                self.display_scene(scene=scene, mode=GL_TRIANGLES)                
-            if vertices is not None:
-                #self.display_vertices(vertices=vertices, mode=GL_TRIANGLES)                                     
-                self.display_vertices(vertices=vertices, mode=GL_QUADS)                                     
+                self.display_scene(scene=scene, mode=self.scene_display_mode)                
+            if vertices is not None:                                    
+                self.display_vertices(vertices=vertices, mode=self.vertices_display_mode)                                     
             glPopMatrix()
 
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
