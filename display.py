@@ -13,8 +13,7 @@ from entities import Scene, Vertex
 
 @dataclass
 class Displayer:
-    #vertices_display_mode: Enum = GL_POINTS
-    vertices_display_mode: Enum = GL_LINES
+    vertices_display_mode: Enum = GL_POINTS    
     scene_display_mode: Enum = GL_TRIANGLES
 
     def display_vertices(self, vertices: List[Vertex], mode: Enum = GL_POINTS):
